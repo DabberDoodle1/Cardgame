@@ -15,8 +15,9 @@ public:
   static Shader& get_shader(std::string name);
 
   //@ Texture methods @//
-  static void make_texture(const char* texture_path, bool alpha, std::string name);
+  static void make_texture(const char* texture_path, std::string name);
   static Texture& get_texture(std::string name);
+  static void out_all();
 
   //@ Delete stored Shaders and Textures @//
   static void clear();

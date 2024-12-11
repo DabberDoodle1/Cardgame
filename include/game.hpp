@@ -6,6 +6,7 @@
 #include <string>
 
 #include "sprite_renderer.hpp"
+#include "cards.hpp"
 
 enum GameState {
   GAME_ACTIVE,
@@ -16,14 +17,15 @@ enum GameState {
 class Game {
 public:
   //@ Constructor and destructor @//
-  Game(unsigned int width, unsigned int height);
+  Game(unsigned int width, unsigned int height, const char* title);
   ~Game();
 
   //@ Load all textures into ResourceManager @//
-  void load_textures(std::string location, std::string extension, std::string cardnames[]);
+  void load_textures(std::string location, std::string extension, std::string faces[]);
 
   //@ Basic necessary methods to run game @//
-  void update(float delta_time);
+  int isRunning();
+  void update();
   void render();
 
 private:
@@ -32,6 +34,12 @@ private:
   GameState state;
   bool keys[1024];
   unsigned int width, height;
+  GLFWwindow* window;
+  CardSlot slots[13];
+
+  //@ Private static methods @//
+  static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+  static void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 };
 
 #endif

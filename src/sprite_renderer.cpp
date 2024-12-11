@@ -3,16 +3,15 @@
 SpriteRenderer::SpriteRenderer(Shader& shader):
   shader(shader)
 {
-  
-  //@ Creaete vertex buffer and element buffer @//
+  //@ Create vertex buffer and element buffer @//
   unsigned int VBO, EBO;
 
   //@ Create vertex data @//
-  glm::vec2 vertices[] = {
-    glm::vec2(0.0f, 1.0f), //@ Top left @//
-    glm::vec2(1.0f, 1.0f), //@ Top right @//
-    glm::vec2(1.0f, 0.0f), //@ Bottom right @//
-    glm::vec2(0.0f, 0.0f)  //@ Bottom left @//
+  float vertices[] = {
+    0.0f, 1.0f, //@ Top left @//
+    1.0f, 1.0f, //@ Top right @//
+    1.0f, 0.0f, //@ Bottom right @//
+    0.0f, 0.0f  //@ Bottom left @//
   };
 
   //@ Create index data @//
@@ -49,8 +48,10 @@ SpriteRenderer::SpriteRenderer(Shader& shader):
   glDeleteBuffers(1, &EBO);
 }
 
-void SpriteRenderer::draw_object(Texture& texture, glm::vec2 pos, glm::vec2 size)
+void SpriteRenderer::draw_object(Texture& texture, glm::vec2 pos)
 {
+  glm::vec2 size(100.0f, 140.0f);
+
   //@ Use shader program @//
   glUseProgram(this->shader.get_id());
 

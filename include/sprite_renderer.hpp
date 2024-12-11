@@ -14,7 +14,7 @@ public:
   SpriteRenderer(Shader& shader);
 
   //@ Draws an object with a rendered sprite @//
-  void draw_object(Texture& texture, glm::vec2 pos, glm::vec2 size = glm::vec2(10.0f, 14.0f));
+  void draw_object(Texture& texture, glm::vec2 pos);
 private:
   Shader shader;
   unsigned int quad_vao;

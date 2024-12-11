@@ -1,9 +1,56 @@
 #include "../include/game.hpp"
 #include "../include/resource_manager.hpp"
 #include <GLFW/glfw3.h>
+#include <iostream>
+#include <random>
+#include <algorithm>
 
-Game::Game(unsigned int width, unsigned int height): state(GAME_ACTIVE), width(width), height(height), renderer(nullptr)
+Game::Game(unsigned int width, unsigned int height, const char* title): state(GAME_ACTIVE), width(width), height(height), renderer(nullptr), window(nullptr), slots()
 {
+  //@ Initialize GLFW library @//
+  if (!glfwInit())
+  {
+    std::cout << "ERROR: GLFW NOT INITIALIZED" << std::endl;
+    glfwTerminate();
+    return;
+  }
+
+  //@ GLFW window hints @//
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  
+  //@ Create the window @//
+  window = glfwCreateWindow(1280, 720, "OpenGL Sandbox Simulation", NULL, NULL);
+
+  if (!window)
+  {
+    std::cout << "ERROR: WINDOW NOT CREATED" << std::endl;
+    glfwTerminate();
+    return;
+  }
+
+  glfwMakeContextCurrent(window);
+
+
+  //@ Initialize GLAD library @//
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+  {
+    std::cout << "ERROR: GLAD NOT INITIALIZED" << std::endl;
+    glfwTerminate();
+    return;
+  }
+
+  //@ Set GLFW callback functions @//
+  glfwSetKeyCallback(window, this->key_callback);
+  glfwSetFramebufferSizeCallback(window, this->framebuffer_size_callback);
+
+  //@ Set OpenGL parameters @//
+  glViewport(0, 0, 1280, 720);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+
   //@ Create orthographic projection matrix @//
   glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, -1.0f, 1.0f);
 
@@ -19,34 +66,176 @@ Game::Game(unsigned int width, unsigned int height): state(GAME_ACTIVE), width(w
   //@ Create sprite renderer @//
   renderer = new SpriteRenderer(shader);
 
-  //@ Make texture @//
-  //ResourceManager::make_texture("res/images/ace_spades.png", true, "face");
+  //@ Load all texture sprites into Texture objects @//
+  std::string faces[13] = {
+    "2", "3", "4", "5", "6", "7", "8", "9", "10", "ace", "king", "queen", "jack"
+  };
+
+  this->load_textures("res/images/", ".png", faces);
+
+
+  //@ Randomly load all the Card objects to be used@//
+  Card* cards[52];
+  std::random_device rd;
+
+  for (int i = 0; i < 13; i++)
+  {
+    std::uniform_int_distribution<int> dist(1, 4);
+    int n = dist(rd);
+    std::string bg("_bg");
+
+    int x = (n + 1) % 4;
+    int y = (n + 2) % 4;
+    int z = (n + 3) % 4;
+
+    if (n == 0 || x == 0 || y == 0 || z == 0)
+    {
+      n++;
+      x++;
+      y++;
+      z++;
+    }
+
+    /*
+    Card* card1 = new Card(i+1, 1, std::string(static_cast<char>(n + 48) + bg).c_str());
+    Card* card2 = new Card(i+1, 2, std::string(static_cast<char>(x + 48) + bg).c_str());
+    Card* card3 = new Card(i+1, 3, std::string(static_cast<char>(y + 48) + bg).c_str());
+    Card* card4 = new Card(i+1, 4, std::string(static_cast<char>(z + 48) + bg).c_str());
+
+    if (card1)
+      std::cout << "Yes card1  ";
+    if (card2)
+      std::cout << "Yes card2  ";
+    if (card3)
+      std::cout << "Yes card3  ";
+    if (card4)
+      std::cout << "Yes card4" << std::endl;
+
+    cards[i] = card1;
+    cards[i + 13] = card2;
+    cards[i + 26] = card3;
+    cards[i + 39] = card4;*/
+
+    cards[i] = new Card(i+1, 1, std::string(static_cast<char>(n + 48) + bg).c_str());
+    cards[i + 13] = new Card(i+1, 2, std::string(static_cast<char>(x + 48) + bg).c_str());
+    cards[i + 26] = new Card(i+1, 3, std::string(static_cast<char>(y + 48) + bg).c_str());
+    cards[i + 39] = new Card(i+1, 4, std::string(static_cast<char>(z + 48) + bg).c_str());
+  }
+
+  std::shuffle(&cards[0], &cards[52], rd);
+
+  for (int i = 0; i < 13; i++)
+  {
+    switch (i)
+    {
+      case 0:
+        slots[0] = CardSlot(140.0f, 100.0f, -1);
+        break;
+      case 1:
+        slots[1] = CardSlot(290.0f, 100.0f, 0);
+        break;
+      case 2 ... 5:
+        slots[i] = CardSlot(140.0f + (i+1) * 150.0f, 100.0f, -1);
+        break;
+      case 6 ... 12:
+        slots[i] = CardSlot(140.0f + (i-6) * 150.0f, 300.0f, 1);
+        break;
+    }
+  }
+
+  for (int i = 0; i < 52; i++)
+  {
+    slots[0].add_card(cards[i], false);
+    cards[i] = nullptr;
+  }
+
+  for (int i = 0; i < 7; i++)
+  {
+    for (int k = i; k < 7; k++)
+    {
+      slots[6 + k].add_card(slots[0].get_last_card(), false);
+      slots[0].remove_card();
+    }
+  }
+
+//  for (int i = 0; i < 7; i++)
+//    slots[6 + i].get_last_card()->flip_card();
 }
 
 Game::~Game()
 {
   delete renderer;
+  for (int i = 0; i < 13; i++)
+    slots[i].clear();
 }
 
-void Game::load_textures(std::string location, std::string extension, std::string cardnames[])
+void Game::load_textures(std::string location, std::string extension, std::string faces[])
 {
   for (int i = 0; i < 13; i++)
   {
-    std::string str = cardnames[i];
+    std::string str = faces[i];
     std::string s("_spades"), c("_clubs"), h("_hearts"), d("_diamonds");
-    ResourceManager::make_texture(std::string(location + str + s + extension).c_str(), true, str + s);
-    ResourceManager::make_texture(std::string(location + str + c + extension).c_str(), true, str + c);
-    ResourceManager::make_texture(std::string(location + str + h + extension).c_str(), true, str + h);
-    ResourceManager::make_texture(std::string(location + str + d + extension).c_str(), true, str + d);
+    ResourceManager::make_texture(std::string(location + str + s + extension).c_str(), str + s);
+    ResourceManager::make_texture(std::string(location + str + c + extension).c_str(), str + c);
+    ResourceManager::make_texture(std::string(location + str + h + extension).c_str(), str + h);
+    ResourceManager::make_texture(std::string(location + str + d + extension).c_str(), str + d);
+  }
+  
+  for (int i = 0; i < 4; i++)
+  {
+    char c = static_cast<char>(i + 49);
+    std::string common("_bg");
+    ResourceManager::make_texture(std::string(location + c + common + extension).c_str(), std::string(c + common));
   }
 }
 
-void Game::update(float delta_time)
+int Game::isRunning()
 {
+  return !glfwWindowShouldClose(window);
+}
 
+void Game::update()
+{
+  glfwPollEvents();
+
+  glClearColor(0.5f, 0.2f, 0.7f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT);
+  this->render();
+
+  glfwSwapBuffers(window);
 }
 
 void Game::render()
 {
-  renderer->draw_object(ResourceManager::get_texture("king_diamonds"), glm::vec2(0.0f), glm::vec2(500.0f, 700.0f));
+  for (int i = 0; i < 13; i++)
+  {
+    CardSlot slot = slots[i];
+    if(slot.get_expansion() == -1)
+    {
+      Card* card = slot.get_last_card();
+      if (card)
+        renderer->draw_object(ResourceManager::get_texture(card->get_current_texture()), glm::vec2(slot.get_x(), slot.get_y()));
+    }
+    else if (slot.get_expansion() == 0){}
+    else {
+      Card* cards = slot.get_first_card();
+
+      for (int i = 0; cards != NULL; i++)
+      {
+        renderer->draw_object(ResourceManager::get_texture(cards->get_current_texture()), glm::vec2(slot.get_x(), slot.get_y() + i * 38.5f));
+        cards = cards->next;
+      }
+    }
+  }
+}
+
+void Game::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+    glfwSetWindowShouldClose(window, true);
+}
+
+void Game::framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+  glViewport(0, 0, width, height);
 }

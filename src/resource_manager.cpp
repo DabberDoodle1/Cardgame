@@ -61,20 +61,31 @@ Shader& ResourceManager::get_shader(std::string name)
   return Shaders[name];
 }
 
-void ResourceManager::make_texture(const char* texture_path, bool alpha, std::string name)
+void ResourceManager::make_texture(const char* texture_path, std::string name)
 {
-  //@ Defining texture formats with ternary operator @//
-  unsigned int internal_format = (alpha == true) ? GL_RGBA : GL_RGB;
-  unsigned int image_format = (alpha == true) ? GL_RGBA : GL_RGB;
-
-  //@ Create the texture object @//
-  Texture texture(internal_format, image_format);
-
   //@ Loading the image data @//
   int width, height, nrChannels;
   unsigned char* data = stbi_load(texture_path, &width, &height, &nrChannels, 0);
 
-  //@ Creating and mapping the texture  @//
+  if (!data)
+  {
+    std::cout << "ERROR: IMAGE DID NOT LOAD" << std::endl;
+    return;
+  }
+
+  //@ Defining texture formats with ternary operator @//
+  unsigned int format;
+  if (nrChannels == 1)
+    format = GL_RED;
+  else if (nrChannels == 3)
+    format = GL_RGB;
+  else if (nrChannels == 4)
+    format = GL_RGBA;
+
+  //@ Create the texture object @//
+  Texture texture(format, format);
+
+  //@ Creating and mapping the texture @//
   texture.create(width, height, data);
   Textures[name] = texture;
 
@@ -85,6 +96,12 @@ void ResourceManager::make_texture(const char* texture_path, bool alpha, std::st
 Texture& ResourceManager::get_texture(std::string name)
 {
   return Textures[name];
+}
+
+void ResourceManager::out_all()
+{
+  for (auto it = Textures.begin(); it != Textures.end(); it++)
+    std::cout << it->first << std::endl;
 }
 
 void ResourceManager::clear()
