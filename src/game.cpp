@@ -50,7 +50,6 @@ Game::Game(unsigned int width, unsigned int height, const char* title): state(GA
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-
   //@ Create orthographic projection matrix @//
   glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, -1.0f, 1.0f);
 
@@ -58,13 +57,14 @@ Game::Game(unsigned int width, unsigned int height, const char* title): state(GA
   ResourceManager::make_shader("res/shaders/sprite_vertex.glsl", "res/shaders/sprite_fragment.glsl", "sprite");
 
   //@ Send uniform data to the GPU @//
-  Shader shader = ResourceManager::get_shader("sprite");
-  glUseProgram(shader.get_id());
-  shader.uniform_int("image", 0);
-  shader.uniform_mat4("projection", projection);
+  Shader sprite_shader = ResourceManager::get_shader("sprite");
+
+  glUseProgram(sprite_shader.get_id());
+  sprite_shader.uniform_int("image", 0);
+  sprite_shader.uniform_mat4("projection", projection);
 
   //@ Create sprite renderer @//
-  renderer = new SpriteRenderer(shader);
+  renderer = new SpriteRenderer(sprite_shader);
 
   //@ Load all texture sprites into Texture objects @//
   std::string faces[13] = {
@@ -96,26 +96,6 @@ Game::Game(unsigned int width, unsigned int height, const char* title): state(GA
       z++;
     }
 
-    /*
-    Card* card1 = new Card(i+1, 1, std::string(static_cast<char>(n + 48) + bg).c_str());
-    Card* card2 = new Card(i+1, 2, std::string(static_cast<char>(x + 48) + bg).c_str());
-    Card* card3 = new Card(i+1, 3, std::string(static_cast<char>(y + 48) + bg).c_str());
-    Card* card4 = new Card(i+1, 4, std::string(static_cast<char>(z + 48) + bg).c_str());
-
-    if (card1)
-      std::cout << "Yes card1  ";
-    if (card2)
-      std::cout << "Yes card2  ";
-    if (card3)
-      std::cout << "Yes card3  ";
-    if (card4)
-      std::cout << "Yes card4" << std::endl;
-
-    cards[i] = card1;
-    cards[i + 13] = card2;
-    cards[i + 26] = card3;
-    cards[i + 39] = card4;*/
-
     cards[i] = new Card(i+1, 1, std::string(static_cast<char>(n + 48) + bg).c_str());
     cards[i + 13] = new Card(i+1, 2, std::string(static_cast<char>(x + 48) + bg).c_str());
     cards[i + 26] = new Card(i+1, 3, std::string(static_cast<char>(y + 48) + bg).c_str());
@@ -129,13 +109,13 @@ Game::Game(unsigned int width, unsigned int height, const char* title): state(GA
     switch (i)
     {
       case 0:
-        slots[0] = CardSlot(140.0f, 100.0f, -1);
+        slots[0] = CardSlot(140.0f, 100.0f, 0);
         break;
       case 1:
-        slots[1] = CardSlot(290.0f, 100.0f, 0);
+        slots[1] = CardSlot(290.0f, 100.0f, -1);
         break;
       case 2 ... 5:
-        slots[i] = CardSlot(140.0f + (i+1) * 150.0f, 100.0f, -1);
+        slots[i] = CardSlot(140.0f + (i+1) * 150.0f, 100.0f, 0);
         break;
       case 6 ... 12:
         slots[i] = CardSlot(140.0f + (i-6) * 150.0f, 300.0f, 1);
@@ -157,9 +137,6 @@ Game::Game(unsigned int width, unsigned int height, const char* title): state(GA
       slots[0].remove_card();
     }
   }
-
-//  for (int i = 0; i < 7; i++)
-//    slots[6 + i].get_last_card()->flip_card();
 }
 
 Game::~Game()
@@ -198,7 +175,7 @@ void Game::update()
 {
   glfwPollEvents();
 
-  glClearColor(0.5f, 0.2f, 0.7f, 1.0f);
+  glClearColor(2.0f / 255.0f, 152.0f / 255.0f, 15.0f / 255.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
   this->render();
 
@@ -207,24 +184,43 @@ void Game::update()
 
 void Game::render()
 {
+  renderer->draw_object(glm::vec2(0.0f), glm::vec2(1280.0f, 60.0f), glm::vec4(172.0f / 255.0f, 54.0f / 255.0f, 35.0f / 255.0f, 1.0f), false);
+
+  glm::vec2 card_size(100.0f, 140.0f);
   for (int i = 0; i < 13; i++)
   {
     CardSlot slot = slots[i];
+    float slot_x = slot.get_x(), slot_y = slot.get_y();
+
     if(slot.get_expansion() == -1)
     {
-      Card* card = slot.get_last_card();
-      if (card)
-        renderer->draw_object(ResourceManager::get_texture(card->get_current_texture()), glm::vec2(slot.get_x(), slot.get_y()));
-    }
-    else if (slot.get_expansion() == 0){}
-    else {
-      Card* cards = slot.get_first_card();
+      Card *card = slot.get_first_card();
 
-      for (int i = 0; cards != NULL; i++)
-      {
-        renderer->draw_object(ResourceManager::get_texture(cards->get_current_texture()), glm::vec2(slot.get_x(), slot.get_y() + i * 38.5f));
-        cards = cards->next;
-      }
+      if (card)
+      {}
+    }
+
+    else if (slot.get_expansion() == 0)
+    {
+      Card *card = slot.get_last_card();
+
+      if (card)
+        renderer->draw_object(glm::vec2(slot_x, slot_y), card_size, ResourceManager::get_texture(card->get_current_texture()));
+      else
+        renderer->draw_object(glm::vec2(slot_x, slot_y), card_size, glm::vec4(1.0f, 1.0f, 1.0f, 0.15f), true);
+    }
+
+    else {
+      Card *cards = slot.get_first_card();
+      
+      if (cards)
+        for (int i = 0; cards != NULL; i++)
+        {
+          renderer->draw_object(glm::vec2(slot_x, slot_y + i * 9.625f), card_size, ResourceManager::get_texture(cards->get_current_texture()));
+          cards = cards->next;
+        }
+      else
+        renderer->draw_object(glm::vec2(slot_x, slot_y), card_size, glm::vec4(1.0f, 1.0f, 1.0f, 0.15f), true);
     }
   }
 }

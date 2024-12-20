@@ -19,16 +19,14 @@ public:
 
   //@ Get texture name @//
   std::string get_current_texture();
-  bool get_is_flipped();
 
   //@ Next card @//
   Card *next;
 
-  const int suit; //@ 1 - spades, 2 - clubs, 3 - hearts, 4 - diamonds @//
-  const int face; //@ 1 - ace, 2-10 corresponding, 11 - jack, 12 - queen, 13 - king @//
-
 private:
   bool face_on_front; //@ Boolean to see if a card has been flipped or not @//
+  const int suit; //@ 1 - spades, 2 - clubs, 3 - hearts, 4 - diamonds @//
+  const int face; //@ 1 - ace, 2-10 corresponding, 11 - jack, 12 - queen, 13 - king @//
   std::string front_texture; 
   std::string back_texture;
 };
@@ -41,11 +39,12 @@ public:
   CardSlot(float pos_x, float pos_y, short int expansion);
 
   //@ Get methods @//
-  float get_x();
-  float get_y();
-  int get_expansion();
-  Card* get_last_card();
-  Card* get_first_card();
+  float get_x() const;
+  float get_y() const;
+  int get_expansion() const;
+  Card* get_last_card() const;
+  Card* get_first_card() const;
+  unsigned short int get_card_count() const;
 
   //@ Adds and removes cards @//
   void add_card(Card* card, bool should_flip);
@@ -59,6 +58,7 @@ private:
   Card *cards;
   float pos_x, pos_y;
   short int expansion;
+
 };
 
 #endif

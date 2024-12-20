@@ -16,7 +16,7 @@ public:
 
   //@ Basic uniform method(/s) @//
   void uniform_mat4(const char* name, glm::mat4 value) const;
-  void uniform_vec3(const char* name, glm::vec3 value) const;
+  void uniform_vec4(const char* name, glm::vec4 value) const;
   void uniform_int(const char* name, int value) const;
   void uniform_float(const char* name, float value) const;
 

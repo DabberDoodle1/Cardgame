@@ -23,10 +23,9 @@ public:
   //@ Load all textures into ResourceManager @//
   void load_textures(std::string location, std::string extension, std::string faces[]);
 
-  //@ Basic necessary methods to run game @//
+  //@ Basic public methods to run game @//
   int isRunning();
   void update();
-  void render();
 
 private:
   //@ Essential variables @//
@@ -40,6 +39,10 @@ private:
   //@ Private static methods @//
   static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
   static void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+
+  //@ Basic private methods to run game @//
+  void render();
+  void input();
 };
 
 #endif

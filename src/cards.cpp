@@ -70,49 +70,59 @@ std::string Card::get_current_texture()
     return back_texture;
 }
 
-bool Card::get_is_flipped()
-{
-  return face_on_front;
-}
-
 CardSlot::CardSlot() {}
 
 CardSlot::CardSlot(float pos_x, float pos_y, short int expansion): pos_x(pos_x), pos_y(pos_y), expansion(expansion), cards(nullptr) {}
 
-float CardSlot::get_x()
+float CardSlot::get_x() const
 {
   return pos_x;
 }
 
-float CardSlot::get_y()
+float CardSlot::get_y() const
 {
   return pos_y;
 }
 
-int CardSlot::get_expansion()
+int CardSlot::get_expansion() const
 {
   return expansion;
 }
 
-Card* CardSlot::get_last_card()
+Card* CardSlot::get_last_card() const
 {
   if (cards == nullptr)
     return NULL;
 
-  Card *first = cards, *last;
+  Card *first = cards;
 
-  while (cards->next != nullptr)
-    cards = cards->next;
+  while (first->next != nullptr)
+    first = first->next;
 
-  last = cards;
-  cards = first;
-
-  return last;
+  return first;
 }
 
-Card* CardSlot::get_first_card()
+Card* CardSlot::get_first_card() const
 {
   return cards;
+}
+
+unsigned short int CardSlot::get_card_count() const
+{
+  if (cards == nullptr)
+    return 0;
+
+  unsigned short int count = 0;
+
+  Card *first = cards;
+
+  while (first != nullptr)
+  {
+    count++;
+    first = first->next;
+  }
+
+  return count;
 }
 
 void CardSlot::clear()
@@ -129,6 +139,9 @@ void CardSlot::clear()
 
 void CardSlot::add_card(Card *card, bool should_flip)
 {
+  if (should_flip)
+    card->flip_card();
+
   if (cards == nullptr)
   {
     cards = card;
@@ -141,9 +154,6 @@ void CardSlot::add_card(Card *card, bool should_flip)
     cards = cards->next;
 
   cards->next = card;
-
-  if (should_flip)
-    cards->next->flip_card();
 
   cards = first;
 }

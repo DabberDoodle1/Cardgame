@@ -60,9 +60,9 @@ void Shader::uniform_mat4(const char* name, glm::mat4 value) const
   glUniformMatrix4fv(glGetUniformLocation(this->ID, name), 1, false, glm::value_ptr(value));
 }
 
-void Shader::uniform_vec3(const char* name, glm::vec3 value) const
+void Shader::uniform_vec4(const char* name, glm::vec4 value) const
 {
-  glUniform3fv(glGetUniformLocation(this->ID, name), 1, glm::value_ptr(value));
+  glUniform4fv(glGetUniformLocation(this->ID, name), 1, glm::value_ptr(value));
 }
 
 void Shader::uniform_int(const char* name, int value) const
