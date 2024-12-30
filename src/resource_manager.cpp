@@ -1,112 +1,91 @@
 #include "../include/resource_manager.hpp"
 #include "../include/stb_image.h"
-
-#include <iostream>
+#include <glad/glad.h>
 #include <fstream>
 #include <sstream>
-#include <stdexcept>
 
-//@ Initialize static variables @//
-std::map<std::string, Shader> ResourceManager::Shaders;
-std::map<std::string, Texture> ResourceManager::Textures;
+using std::map;
+using std::string;
+using std::ifstream;
+using std::stringstream;
 
+map<string, Shader> ResourceManager::Shaders;
+map<string, Texture> ResourceManager::Textures;
 
-void ResourceManager::make_shader(const char* vertex_path, const char* fragment_path, std::string name)
+void ResourceManager::make_shader(const char* vertex_path, const char* fragment_path, const string name)
 {
-  std::string vertex_source;
-  std::string fragment_source;
-  try
-  {
-    //@ Stream buffers to get and read file content @//
-    std::ifstream fs;
-    std::stringstream ss;
+  string vertex_source;
+  string fragment_source;
 
-    //@ Open vertex shader file @//
-    fs.open(vertex_path);
-    if (fs.is_open())
-    {
-      //@ Read file contents into vertex shader source variable @//
-      ss << fs.rdbuf();
-      vertex_source = ss.str();
-      fs.close();
+  ifstream filestream;
+  stringstream stringstream;
 
-      //@ Refresh stringstream buffer @//
-      ss.str("");
-      ss.clear();
-    }
-    else throw std::runtime_error("VERTEX SHADER FILE NOT FOUND!");
+  // Open vertex shader file, readbuffer into string stream, copy stringstream content to vertex_source
+  filestream.open(vertex_path);
+  stringstream << filestream.rdbuf();
+  vertex_source = stringstream.str();
+  filestream.close();
 
-    //@ Open fragment shader file @//
-    fs.open(fragment_path);
-    if (fs.is_open())
-    {
-      //@ Read file contents into fragment shader source variable @//
-      ss << fs.rdbuf();
-      fragment_source = ss.str();
-      fs.close();
-    }
-    else throw std::runtime_error("FRAGMENT SHADER FILE NOT FOUND!");
-  }
-  catch (std::exception e)
-  {
-    std::cout << "ERROR: " << e.what() << std::endl;
-  }
+  // clear stringstream content and clear stringstream flags to avoid errors when reading filestream buffer again
+  stringstream.str("");
+  stringstream.clear();
 
-  //@ Create and map the shader @//
+  // Open fragment shader file, readbuffer into string stream, copy stringstream content to fragment_source
+  filestream.open(fragment_path);
+  stringstream << filestream.rdbuf();
+  fragment_source = stringstream.str();
+  filestream.close();
+
+  // Create and map the shader
   Shaders[name] = Shader(vertex_source.c_str(), fragment_source.c_str());
 }
 
-Shader& ResourceManager::get_shader(std::string name)
+void ResourceManager::make_texture(const char* texture_path, const string name)
+{
+  // Loading the image data
+  int width, height, nrChannels;
+  unsigned char* data = stbi_load(texture_path, &width, &height, &nrChannels, 0);
+
+  // Assigning texture formats depending on normal channels
+  unsigned int format;
+
+  switch (nrChannels)
+  {
+    case 1:
+      format = GL_RED;
+      break;
+    case 2:
+      format = GL_RG;
+      break;
+    case 3:
+      format = GL_RGB;
+      break;
+    case 4:
+      format = GL_RGBA;
+      break;
+  }
+
+  // Create a new texture and store it
+  Texture texture(format);
+  texture.create(width, height, data);
+  Textures[name] = texture;
+
+  // Free image data to avoid memory leaks
+  stbi_image_free(data);
+}
+
+Shader& ResourceManager::get_shader(string name)
 {
   return Shaders[name];
 }
 
-void ResourceManager::make_texture(const char* texture_path, std::string name)
-{
-  //@ Loading the image data @//
-  int width, height, nrChannels;
-  unsigned char* data = stbi_load(texture_path, &width, &height, &nrChannels, 0);
-
-  if (!data)
-  {
-    std::cout << "ERROR: IMAGE DID NOT LOAD" << std::endl;
-    return;
-  }
-
-  //@ Defining texture formats with ternary operator @//
-  unsigned int format;
-  if (nrChannels == 1)
-    format = GL_RED;
-  else if (nrChannels == 3)
-    format = GL_RGB;
-  else if (nrChannels == 4)
-    format = GL_RGBA;
-
-  //@ Create the texture object @//
-  Texture texture(format, format);
-
-  //@ Creating and mapping the texture @//
-  texture.create(width, height, data);
-  Textures[name] = texture;
-
-  //@ Free image data to avoid memory leaks @//
-  stbi_image_free(data);
-}
-
-Texture& ResourceManager::get_texture(std::string name)
+Texture& ResourceManager::get_texture(string name)
 {
   return Textures[name];
 }
 
-void ResourceManager::out_all()
-{
-  for (auto it = Textures.begin(); it != Textures.end(); it++)
-    std::cout << it->first << std::endl;
-}
-
 void ResourceManager::clear()
 {
-  //@ Deleting stored Shaders and Textures @//
   for (auto shader : Shaders)
     glDeleteProgram(shader.second.get_id());
   for (auto texture : Textures)

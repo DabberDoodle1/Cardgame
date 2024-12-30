@@ -8,41 +8,55 @@
 #include "sprite_renderer.hpp"
 #include "cards.hpp"
 
-enum GameState {
-  GAME_ACTIVE,
-  GAME_WIN,
-  GAME_PAUSE
+enum Variation {
+  SOLITAIRE_TURN_1,
+  SOLITAIRE_TURN_3
+};
+
+struct Cursor {
+  double        x, y, card_x, card_y;
+  Card          *card_held;
+  unsigned char pile_selected;
+  bool          has_released;
+
+  Cursor();
 };
 
 class Game {
 public:
-  //@ Constructor and destructor @//
-  Game(unsigned int width, unsigned int height, const char* title);
+  Game(unsigned int width, unsigned int height, const char *title);
   ~Game();
 
-  //@ Load all textures into ResourceManager @//
-  void load_textures(std::string location, std::string extension, std::string faces[]);
-
-  //@ Basic public methods to run game @//
-  int isRunning();
-  void update();
+  int         isRunning() const;
+  void        update();
 
 private:
-  //@ Essential variables @//
-  SpriteRenderer* renderer;
-  GameState state;
-  bool keys[1024];
-  unsigned int width, height;
-  GLFWwindow* window;
-  CardSlot slots[13];
+  Cursor         cursor;
+  SpriteRenderer *renderer;
+  GLFWwindow     *window;
+  Variation      game_variation;
+  bool           game_won, change_variant_next;
+  unsigned int   width, height;
+  CardPile       stock_pile,
+                 waste_pile,
+                 foundation_piles[4],
+                 tableau_piles[7];
 
-  //@ Private static methods @//
+  void        init(unsigned int width, unsigned int height, const char *title);
+  void        load_textures(std::string location, std::string extension);
+  void        render();
+  void        input();
+  void        new_game();
+  void        clear_piles();
+  void        check_hitboxes(int& hover, int& index, double& card_x, double& card_y);
+  void        press_response(int hover, int index, double card_x, double card_y);
+  void        release_response(int hover);
+  void        return_to_pile();
+  CardPile&   find_pile(int index);
+  bool        check_game_won();
+
   static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
   static void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-
-  //@ Basic private methods to run game @//
-  void render();
-  void input();
 };
 
 #endif

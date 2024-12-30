@@ -1,34 +1,42 @@
 #include "../include/texture.hpp"
 
-Texture::Texture(): width(0), height(0), internal_format(GL_RGB), image_format(GL_RGB), wrap_s(GL_REPEAT), wrap_t(GL_REPEAT), min_filter(GL_LINEAR_MIPMAP_LINEAR), max_filter(GL_LINEAR) { }
+#include <glad/glad.h>
 
-Texture::Texture(unsigned int internal_format, unsigned int image_format):
-  width(0), height(0), internal_format(internal_format), image_format(image_format), wrap_s(GL_REPEAT), wrap_t(GL_REPEAT), min_filter(GL_LINEAR), max_filter(GL_LINEAR)
+Texture::Texture(): format(GL_RGB) { }
+
+Texture::Texture(unsigned int format): format(format)
 {
-  glGenTextures(1, &this->ID);
+  glGenTextures(1, &ID);
 }
 
 void Texture::create(unsigned int width, unsigned int height, unsigned char* data)
 {
-  //@ Assign the height and width variable @//;w3
-  this->width = width;
-  this->height = height;
+  // Prepare this texture for image and parameters
+  glBindTexture(GL_TEXTURE_2D, ID);
 
-  //@ Bind this texture @//
-  glBindTexture(GL_TEXTURE_2D, this->ID);
 
-  //@ Create the texture and set parameters @//
-  glTexImage2D(GL_TEXTURE_2D, 0, this->internal_format, width, height, 0, this->image_format, GL_UNSIGNED_BYTE, data);
+  glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
   glGenerateMipmap(GL_TEXTURE_2D);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, this->wrap_s);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, this->wrap_t);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, this->min_filter);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, this->max_filter);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-  //@ Pixel Store data @//
+
+  if (format == GL_RED || format == GL_RG)
+  {
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_RED);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
+
+    if (format == GL_RG)
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_GREEN);
+  }
+
+
+  // Change the unpack alignment of pixels due to images to account for images that don't have 4 channels
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-  //@ Unbind this texture @//
+
   glBindTexture(GL_TEXTURE_2D, 0);
 }
 
@@ -39,5 +47,5 @@ unsigned int& Texture::get_id()
 
 void Texture::bind() const
 {
-  glBindTexture(GL_TEXTURE_2D, this->ID);
+  glBindTexture(GL_TEXTURE_2D, ID);
 }

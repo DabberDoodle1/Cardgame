@@ -3,62 +3,50 @@
 
 #include <string>
 
-//@ Linked list for cards @//
-class Card
+// Linked list for cards because it is easier to move efficient when moving piles of cards than one at a time
+struct Card
 {
 public:
-  //@ Constructor @//
-  Card();
-  Card(int suit, int face, std::string back);
-
-  //@ Copy Assignment operator @//
+  Card(int suit, int face, std::string back_texture);
   Card& operator=(Card& card);
 
-  //@ Flip card @//
-  void flip_card();
+  unsigned char get_suit() const;
+  unsigned char get_face() const;
+  std::string   get_texture() const;
+  bool          face_is_on_top() const;
+  void          flip();
 
-  //@ Get texture name @//
-  std::string get_current_texture();
-
-  //@ Next card @//
-  Card *next;
-
+  Card          *next;
 private:
-  bool face_on_front; //@ Boolean to see if a card has been flipped or not @//
-  const int suit; //@ 1 - spades, 2 - clubs, 3 - hearts, 4 - diamonds @//
-  const int face; //@ 1 - ace, 2-10 corresponding, 11 - jack, 12 - queen, 13 - king @//
-  std::string front_texture; 
-  std::string back_texture;
+  // Card suit and face will be numbers to make comparisons with other cards easier
+  // Textures for face and back will be strings because ResourceManager takes in strings for texture names
+  unsigned char suit;
+  unsigned char face;
+  std::string   face_texture;
+  std::string   back_texture;
+  bool          face_on_top;
 };
 
-class CardSlot
-{
+// Wrapper class for linked list to make interactions like appending and removal easier
+// It also reduces the likeliness of encountering bugs when "getting" cards(list nodes)
+class CardPile {
 public:
-  //@ Constructor and destructor methods @//
-  CardSlot();
-  CardSlot(float pos_x, float pos_y, short int expansion);
-
-  //@ Get methods @//
-  float get_x() const;
-  float get_y() const;
-  int get_expansion() const;
-  Card* get_last_card() const;
-  Card* get_first_card() const;
-  unsigned short int get_card_count() const;
-
-  //@ Adds and removes cards @//
-  void add_card(Card* card, bool should_flip);
-  void remove_card();
-
-  //@ Free all cards @//
-  void clear();
-
+  CardPile();
+  
+  Card*         get_first();
+  Card*         get_last();
+  Card*         take_nth(int index);
+  unsigned char get_count();
+  bool          is_empty();
+  bool          is_hovered(double pile_x, double cursor_x, double cursor_y, int& index);
+  void          append(Card* card);
+  void          remove_end();
+  void          delete_pile();
 private:
-  //@ Linked list to hold cards and a pointer to the last of the card;
-  Card *cards;
-  float pos_x, pos_y;
-  short int expansion;
+  void          recount();
 
+  Card          *head;
+  unsigned char card_count;
 };
 
 #endif

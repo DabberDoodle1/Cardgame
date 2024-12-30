@@ -3,40 +3,38 @@
 #include <glad/glad.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
-#include <iostream>
+#include <glm/gtc/type_ptr.hpp>
 
-SpriteRenderer::SpriteRenderer(Shader &sprite):
-shader(sprite)
+SpriteRenderer::SpriteRenderer(Shader &sprite): shader(sprite)
 {
-  //@ Create vertex buffer and element buffer @//
   unsigned int VBO_round, EBO_round, VBO_sharp, EBO_sharp;
 
-  //@ Create vertex data @//
   glm::vec2 vertices_round[24];
   float vertices_sharp[] = {
-    0.0f, 1.0f,
-    1.0f, 1.0f,
-    1.0f, 0.0f,
-    0.0f, 0.0f
+    0.f, 1.f,
+    1.f, 1.f,
+    1.f, 0.f,
+    0.f, 0.f
   };
 
-  vertices_round[0] = glm::vec2(0.0375f, 136.25f / 140.0f); //@ Top left @//
-  vertices_round[1] = glm::vec2(0.9625f, 136.25f / 140.0f); //@ Top right @//
-  vertices_round[2] = glm::vec2(0.9625f, 3.75f / 140.0f); //@ Bottom right @//
-  vertices_round[3] = glm::vec2(0.0375f, 3.75f / 140.0f); //@ Bottom left @//
-  
+  vertices_round[0] = glm::vec2(0.05f, 27.f / 28.f); // Top left
+  vertices_round[1] = glm::vec2(0.95f, 27.f / 28.f); // Top right
+  vertices_round[2] = glm::vec2(0.95f, 1.f / 28.f);   // Bottom right
+  vertices_round[3] = glm::vec2(0.05f, 1.f / 28.f);   // Bottom left
+
+  // Quarter circle math for the vertices of each corner
   for (int i = 0; i < 5; i++)
   {
     double theta = i * 0.125 * M_PI;
-    double sinval = sin(theta) * 3 / 112.0, cosval = cos(theta) * 3 / 80.0;
+    double sinval = sin(theta) / 28.0, cosval = cos(theta) * 0.05;
 
-    vertices_round[i+4] = glm::vec2(0.0375f - cosval, 136.25f / 140.0f + sinval);
-    vertices_round[i+9] = glm::vec2(0.9625f + cosval, 136.25f / 140.0f + sinval);
-    vertices_round[i+14] = glm::vec2(0.9625f + cosval, 3.75f / 140.0f - sinval);
-    vertices_round[i+19] = glm::vec2(0.0375f - cosval, 3.75f / 140.0f - sinval);
+    vertices_round[i+4] = glm::vec2(0.05f - cosval, 27.f / 28.f + sinval);
+    vertices_round[i+9] = glm::vec2(0.95f + cosval, 27.f / 28.f + sinval);
+    vertices_round[i+14] = glm::vec2(0.95f + cosval, 1.f / 28.f - sinval);
+    vertices_round[i+19] = glm::vec2(0.05f - cosval, 1.f / 28.f - sinval);
   }
 
-  //@ Create index data @//
+  // Index array to control the edge and face formation of the vertices while minimizing bloat
   unsigned int indices_round[78];
   unsigned int indices_sharp[] = {
     0, 1, 2,
@@ -98,121 +96,130 @@ shader(sprite)
   indices_round[76] = 0;
   indices_round[77] = 3;
 
-  //@ Generate vertex array and buffer objects @//
-  glGenVertexArrays(1, &this->round_quad_vao);
-  glGenVertexArrays(1, &this->sharp_quad_vao);
+  // Generate vertex array and buffer objects
+  glGenVertexArrays(1, &round_quad_vao);
+  glGenVertexArrays(1, &sharp_quad_vao);
   glGenBuffers(1, &VBO_round);
   glGenBuffers(1, &EBO_round);
   glGenBuffers(1, &VBO_sharp);
   glGenBuffers(1, &EBO_sharp);
 
-  //@ Bind vertex array and buffer objects @//
-  glBindVertexArray(this->round_quad_vao);
+  // Time to set up round quad vertex array
+  glBindVertexArray(round_quad_vao);
+
   glBindBuffer(GL_ARRAY_BUFFER, VBO_round);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_round);
-
-  //@ Add buffer data to buffer objects @//
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_round), vertices_round, GL_STATIC_DRAW);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_round);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices_round), indices_round, GL_STATIC_DRAW);
-
-  //@ Set and enable vertex array attribute pointer @//
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void*)0);
   glEnableVertexAttribArray(0);
 
+
+  // Time to set up sharp quad vertex array
   glBindVertexArray(0);
-  glBindVertexArray(this->sharp_quad_vao);
+  glBindVertexArray(sharp_quad_vao);
 
   glBindBuffer(GL_ARRAY_BUFFER, VBO_sharp);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_sharp);
-
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_sharp), vertices_sharp, GL_STATIC_DRAW);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_sharp);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices_sharp), indices_sharp, GL_STATIC_DRAW);
-
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
 
-  //@ Unbind vertex arrays and buffer objecs @//
   glBindVertexArray(0);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-  //@ Delete unnecessary buffer objects @//
+  // Delete the VBOs and EBOs since they are unnecessary now
   glDeleteBuffers(1, &VBO_round);
   glDeleteBuffers(1, &EBO_round);
   glDeleteBuffers(1, &VBO_sharp);
   glDeleteBuffers(1, &EBO_sharp);
 }
 
-void SpriteRenderer::draw_object(glm::vec2 pos, glm::vec2 size, Texture& texture)
+void SpriteRenderer::draw_object(glm::vec2 pos, glm::vec2 size, Texture& texture, bool is_round, bool has_border, glm::vec4 color)
 {
-  //@ Use shader program @//
-  glUseProgram(this->shader.get_id());
+  unsigned int indices;
+  glUseProgram(shader.get_id());
 
-  //@ Create model matrix @//
-  glm::mat4 model(1.0f);
+  glm::mat4 model(1.f), border(1.f);
 
-  //@ Move model matrix into position @//
-  model = glm::translate(model, glm::vec3(pos, 0.0f));
+  model = glm::translate(model, glm::vec3(pos, 0.f));
+  model = glm::scale(model, glm::vec3(size, 1.f));
 
-  //@ Scale model matrix to size @//
-  model = glm::scale(model, glm::vec3(size, 1.0f));
+  border = glm::translate(border, glm::vec3(pos.x - 1.f, pos.y - 1.f, 0.f));
+  border = glm::scale(border, glm::vec3(size.x + 2.f, size.y + 2.f, 1.f));
 
-  //@ Send model matrix and sprite color to GPU @//
-  this->shader.uniform_mat4("model", glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(pos.x - 1.0f, pos.y - 1.0f, 0.0f)), glm::vec3(size.x * 102.0f / 100.0f, size.y * 142.0f / 140.0f, 1.0f)));
-  this->shader.uniform_vec4("color", glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-
-  //@ Activate texture @//
+  // Bind the texture to use
   glActiveTexture(GL_TEXTURE0);
   texture.bind();
+  shader.uniform_int("use_texture", 1);
 
-  //@ Draw the object @//
-  glBindVertexArray(this->round_quad_vao);
+  // Binding the vertex array needed
+  if (is_round)
+  {
+    glBindVertexArray(round_quad_vao);
+    indices = 78;
+  } else {
+    glBindVertexArray(sharp_quad_vao);
+    indices = 6;
+  }
 
-  glDrawElements(GL_TRIANGLES, 78, GL_UNSIGNED_INT, 0);
+  if (has_border)
+  {
+    glm::vec4 border_color(0.f, 0.f, 0.f, 1.f);
+    shader.uniform_mat4("model", &(border[0].x));
+    shader.uniform_vec4("unif_color", &(border_color.x));
+    glDrawElements(GL_TRIANGLES, indices, GL_UNSIGNED_INT, 0);
+  }
 
-  this->shader.uniform_mat4("model", model);
-  this->shader.uniform_vec4("color", glm::vec4(1.0f));
-
-  glDrawElements(GL_TRIANGLES, 78, GL_UNSIGNED_INT, 0);
+  // Draw the actual card
+  shader.uniform_mat4("model", &(model[0].x));
+  shader.uniform_vec4("unif_color", &(color.x));
+  glDrawElements(GL_TRIANGLES, indices, GL_UNSIGNED_INT, 0);
 
   glBindVertexArray(0);
 }
 
-void SpriteRenderer::draw_object(glm::vec2 pos, glm::vec2 size, glm::vec4 color, bool is_round)
+void SpriteRenderer::draw_object(glm::vec2 pos, glm::vec2 size, bool is_round, bool has_border, glm::vec4 color)
 {
-  //@ Use shader program @//
-  glUseProgram(this->shader.get_id());
+  unsigned int indices;
+  glUseProgram(shader.get_id());
 
-  //@ Create and transform model matrix @//
-  glm::mat4 model(1.0f);
-  model = glm::translate(model, glm::vec3(pos, 0.0f));
-  model = glm::scale(model, glm::vec3(size, 1.0f));
+  glm::mat4 model(1.f), border(1.f);
 
-  //@ Bind no texture @//
+  model = glm::translate(model, glm::vec3(pos, 0.f));
+  model = glm::scale(model, glm::vec3(size, 1.f));
+
+  border = glm::translate(border, glm::vec3(pos.x - 1.f, pos.y - 1.f, 0.f));
+  border = glm::scale(border, glm::vec3(size.x + 2.f, size.y + 2.f, 1.f));
+
+  // Unbinding texture at texture unit 0
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, 0);
+  shader.uniform_int("use_texture", 0);
 
-  //@ Draw the object @//
   if (is_round)
   {
-    this->shader.uniform_mat4("model", model);
-    this->shader.uniform_vec4("color", color);
-
-    glBindVertexArray(this->round_quad_vao);
-    glDrawElements(GL_TRIANGLES, 78, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(round_quad_vao);
+    indices = 78;
+  } else {
+    glBindVertexArray(sharp_quad_vao);
+    indices = 6;
   }
-  else
+
+  if (has_border)
   {
-    this->shader.uniform_mat4("model", glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(pos.x, pos.y - 1.0f, 0.0f)), glm::vec3(size.x, size.y * 62.0f / 60.0f, 1.0f)));
-    this->shader.uniform_vec4("color", glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-
-    glBindVertexArray(this->sharp_quad_vao);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-    this->shader.uniform_mat4("model", model);
-    this->shader.uniform_vec4("color", color);
-
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glm::vec4 border_color(0.f, 0.f, 0.f, 1.f);
+    shader.uniform_mat4("model", &(border[0].x));
+    shader.uniform_vec4("unif_color", &(border_color.x));
+    glDrawElements(GL_TRIANGLES, indices, GL_UNSIGNED_INT, 0);
   }
+
+  // Draw the actual card
+  shader.uniform_mat4("model", &(model[0].x));
+  shader.uniform_vec4("unif_color", &(color.x));
+  glDrawElements(GL_TRIANGLES, indices, GL_UNSIGNED_INT, 0);
+
   glBindVertexArray(0);
 }

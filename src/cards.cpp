@@ -1,8 +1,8 @@
 #include "../include/cards.hpp"
-#include <iostream>
 #include <string>
 
-Card::Card(int face, int suit, std::string back): face(face), suit(suit), face_on_front(false), next(nullptr), back_texture(back)
+Card::Card(int suit, int face, std::string back_texture):
+  suit(suit), face(face), face_on_top(false), back_texture(back_texture), next(nullptr)
 {
   std::string front("");
 
@@ -30,7 +30,7 @@ Card::Card(int face, int suit, std::string back): face(face), suit(suit), face_o
 
   front.append("_");
 
-  switch (suit)
+  switch (suit + 1)
   {
     case 1:
       front.append("spades");
@@ -46,7 +46,7 @@ Card::Card(int face, int suit, std::string back): face(face), suit(suit), face_o
       break;
   }
 
-  front_texture = front;
+  face_texture = front;
 }
 
 Card& Card::operator=(Card& card)
@@ -54,123 +54,218 @@ Card& Card::operator=(Card& card)
   return *this;
 }
 
-void Card::flip_card()
+void Card::flip()
 {
-  if (face_on_front)
-    face_on_front = false;
+  if (face_on_top)
+    face_on_top = false;
   else
-    face_on_front = true;
+    face_on_top = true;
 }
 
-std::string Card::get_current_texture()
+unsigned char Card::get_suit() const
 {
-  if (face_on_front)
-    return front_texture;
+  return suit;
+}
+
+unsigned char Card::get_face() const
+{
+  return face;
+}
+
+std::string Card::get_texture() const
+{
+  if (face_on_top)
+    return face_texture;
   else
     return back_texture;
 }
 
-CardSlot::CardSlot() {}
-
-CardSlot::CardSlot(float pos_x, float pos_y, short int expansion): pos_x(pos_x), pos_y(pos_y), expansion(expansion), cards(nullptr) {}
-
-float CardSlot::get_x() const
+bool Card::face_is_on_top() const
 {
-  return pos_x;
+  return face_on_top;
 }
 
-float CardSlot::get_y() const
+
+CardPile::CardPile(): head(nullptr), card_count(0) {}
+
+Card* CardPile::get_first()
 {
-  return pos_y;
+  return head;
 }
 
-int CardSlot::get_expansion() const
+Card* CardPile::get_last()
 {
-  return expansion;
+  if (!head)
+    return nullptr;
+
+  Card *temp = head;
+
+
+  while (temp->next != NULL)
+    temp = temp->next;
+
+
+  return temp;
 }
 
-Card* CardSlot::get_last_card() const
+Card* CardPile::take_nth(int index)
 {
-  if (cards == nullptr)
-    return NULL;
+  if (index == 0)
+    return nullptr;
 
-  Card *first = cards;
-
-  while (first->next != nullptr)
-    first = first->next;
-
-  return first;
-}
-
-Card* CardSlot::get_first_card() const
-{
-  return cards;
-}
-
-unsigned short int CardSlot::get_card_count() const
-{
-  if (cards == nullptr)
-    return 0;
-
-  unsigned short int count = 0;
-
-  Card *first = cards;
-
-  while (first != nullptr)
+  if (index == -1)
   {
+    Card *last = get_last();
+    remove_end();
+    card_count--;
+
+    return last;
+  }
+
+  if (index == 1)
+  {
+    Card *first = head;
+    head = nullptr;
+    card_count = 0;
+
+    return first;
+  }
+
+  Card *temp = head, *nth_card;
+
+  for (int i = 0; i < index - 2; i++)
+    head = head->next;
+
+  nth_card = head->next;
+  head->next = nullptr;
+  head = temp;
+
+  recount();
+
+  return nth_card;
+}
+
+unsigned char CardPile::get_count()
+{
+  return card_count;
+}
+
+bool CardPile::is_empty()
+{
+  if (!head)
+    return true;
+  else
+    return false;
+}
+
+bool CardPile::is_hovered(double pile_x, double cursor_x, double cursor_y, int& index)
+{
+  if (!head)
+  {
+    card_count = 0;
+    index = 0;
+
+    if ((cursor_x >= pile_x && cursor_x <= pile_x + 100.0)  &&  (cursor_y >= 300.0 && cursor_y <= 400.0))
+      return true;
+    else
+      return false;
+  }
+
+  double card_y      = 300.0;
+  int    count       = 1;
+  Card   *current    = head;
+
+  while (current->next != nullptr)
+  {
+    if ((cursor_x >= pile_x && cursor_x <= pile_x + 100.0)  &&  (cursor_y >= card_y && cursor_y <= card_y + 20.0)  &&  current->face_is_on_top())
+    {
+      index = count;
+      return true;
+    }
+
+    current = current->next;
+    card_y += 20.0;
     count++;
-    first = first->next;
   }
 
-  return count;
-}
-
-void CardSlot::clear()
-{
-  while (cards != nullptr)
+  if ((cursor_x >= pile_x && cursor_x <= pile_x + 100.0)  &&  (cursor_y >= card_y && cursor_y <= card_y + 140.0)  &&  current->face_is_on_top())
   {
-    Card *current = cards->next;
-
-    delete cards;
-
-    cards = current;
+    index = -1;
+    return true;
   }
+
+  index = 0;
+  return false;
 }
 
-void CardSlot::add_card(Card *card, bool should_flip)
+void CardPile::append(Card *card)
 {
-  if (should_flip)
-    card->flip_card();
-
-  if (cards == nullptr)
+  if (!head)
   {
-    cards = card;
+    head = card;
+    card_count = 1;
     return;
   }
 
-  Card *first = cards;
+  Card *temp = head;
 
-  while (cards->next != nullptr)
-    cards = cards->next;
+  while (head->next != NULL)
+    head = head->next;
 
-  cards->next = card;
-
-  cards = first;
+  head->next = card;
+  head = temp;
+  recount();
 }
 
-void CardSlot::remove_card()
+void CardPile::remove_end()
 {
-  if (cards->next == nullptr)
+  if (!head->next)
   {
-    cards = nullptr;
+    head = nullptr;
+    card_count = 0;
     return;
   }
-  Card *first = cards;
 
-  while (cards->next->next != nullptr)
-    cards = cards->next;
+  Card *temp = head;
 
-  cards->next = nullptr;
+  while (head->next->next != NULL)
+    head = head->next;
 
-  cards = first;
+  head->next = nullptr;
+  head = temp;
+  recount();
+}
+
+void CardPile::recount()
+{
+  if (!head)
+  {
+    card_count = 0;
+    return;
+  }
+
+  Card *temp = head;
+  int count = 0;
+
+  while (temp != NULL)
+  {
+    temp = temp->next;
+    count++;
+  }
+
+  card_count = count;
+}
+
+void CardPile::delete_pile()
+{
+  card_count = 0;
+
+  while (head != NULL)
+  {
+    Card *temp = head->next;
+
+    delete head;
+
+    head = temp;
+  }
 }
