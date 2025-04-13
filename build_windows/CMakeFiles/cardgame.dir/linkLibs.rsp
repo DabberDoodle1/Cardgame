@@ -1,1 +1,0 @@
- dependencies/glad/libglad.a dependencies/glfw/src/libglfw3.a dependencies/stb_image/libstb_image.a -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 

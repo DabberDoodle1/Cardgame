@@ -1,2 +1,0 @@
-/usr/bin/x86_64-w64-mingw32-ar qc libstb_image.a CMakeFiles/stb_image.dir/src/stb_image.cpp.obj
-/usr/bin/x86_64-w64-mingw32-ranlib libstb_image.a
