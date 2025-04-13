@@ -1,0 +1,12 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/THE_ALPHA_AND_THE_OMEGA/C++/Cardgame/build_windows/cmake_install.cmake",
+		"/home/THE_ALPHA_AND_THE_OMEGA/C++/Cardgame/build_windows/dependencies/glfw/cmake_install.cmake",
+		"/home/THE_ALPHA_AND_THE_OMEGA/C++/Cardgame/build_windows/dependencies/glfw/src/cmake_install.cmake",
+		"/home/THE_ALPHA_AND_THE_OMEGA/C++/Cardgame/build_windows/dependencies/glad/cmake_install.cmake",
+		"/home/THE_ALPHA_AND_THE_OMEGA/C++/Cardgame/build_windows/dependencies/glm/cmake_install.cmake",
+		"/home/THE_ALPHA_AND_THE_OMEGA/C++/Cardgame/build_windows/dependencies/stb_image/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
